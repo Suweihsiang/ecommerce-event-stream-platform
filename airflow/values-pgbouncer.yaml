@@ -1,0 +1,15 @@
+executor: CeleryExecutor
+
+pgbouncer:
+  enabled: true
+  extraIni: |
+    pool_mode = transaction
+    max_client_conn = 200
+    default_pool_size = 20
+    min_pool_size = 5
+    reserve_pool_size = 5
+    reserve_pool_timeout = 5
+  extraIniMetadata: |
+    pool_mode = transaction
+  extraIniResultBackend: |
+    pool_mode = transaction

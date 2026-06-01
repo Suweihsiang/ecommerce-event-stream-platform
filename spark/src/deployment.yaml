@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-to-minio-bronze-iceberg
+  namespace: spark
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-to-minio-bronze-iceberg
+  template:
+    metadata:
+      labels:
+        app: kafka-to-minio-bronze-iceberg
+    spec:
+      serviceAccountName: spark
+      containers:
+        - name: spark
+          image: kafka-to-minio:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              $SPARK_HOME/bin/spark-submit \
+              --master k8s://https://kubernetes.default.svc:443 \
+              --deploy-mode cluster \
+              --name kafka-to-minio-bronze-iceberg \
+              --conf spark.executor.instances=1 \
+              --conf spark.executor.memory=1g \
+              --conf spark.executor.cores=1 \
+              --conf spark.executor.memoryOverhead=512m \
+              --conf spark.driver.memory=1g \
+              --conf spark.kubernetes.namespace=spark \
+              --conf spark.driver.memoryOverhead=512m \
+              --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
+              --conf spark.kubernetes.container.image=kafka-to-minio:latest \
+              --conf spark.kubernetes.container.image.pullPolicy=IfNotPresent \
+              local:///opt/spark/apps/kafka-to-bronze.py

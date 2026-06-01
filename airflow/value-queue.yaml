@@ -1,0 +1,48 @@
+executor: CeleryExecutor
+
+config:
+  celery:
+    worker_concurrency: 16
+
+flower:
+  enabled: true
+
+workers:
+  env:
+    - name: AIRFLOW__CELERY__WORKER_CONCURRENCY
+      value: "16"
+
+  celery:
+    enableDefault: true
+    queue: default
+    replicas: 1
+    sets:
+      - name: data-sync
+        queue: data-sync
+        replicas: 1
+        env:
+          - name: AIRFLOW__CELERY__WORKER_CONCURRENCY
+            value: "32"
+
+      - name: heavy-job
+        queue: heavy-job
+        replicas: 1
+        env:
+          - name: AIRFLOW__CELERY__WORKER_CONCURRENCY
+            value: "16"
+
+dags:
+  mountPath: /opt/airflow/dags
+
+  persistence:
+    enabled: false
+
+  gitSync:
+    enabled: true
+    repo: "http://gitea-http.gitea.svc.cluster.local:3000/scottjasontaiwan/airflow-dags.git"
+    branch: "main"
+    rev: "HEAD"
+    depth: 1
+    period: 10s
+    subPath: ""
+    credentialsSecret: airflow-gitsync-credentials

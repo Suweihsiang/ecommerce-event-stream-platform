@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-fake-event-producer
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-fake-event-producer
+  template:
+    metadata:
+      labels:
+        app: kafka-fake-event-producer
+    spec:
+      containers:
+        - name: producer
+          image: kafka-fake-event:latest
+          imagePullPolicy: IfNotPresent
