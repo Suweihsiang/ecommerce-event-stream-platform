@@ -71,9 +71,19 @@ Telegram Alert
 
 ---
 
-# 📦 Spark Dependencies
+# 📦 Dependencies
 
-本專案使用以下 Spark Packages：
+| Component | Version |
+|------------|------------|
+| Spark | 3.5.6 |
+| Scala | 2.12 |
+| Iceberg | 1.9.1 |
+| Kafka Connector | 3.5.6 |
+| Hadoop AWS | 3.3.4 |
+| MinIO | RELEASE.2025 |
+| Airflow | 3.x |
+
+Spark Packages：
 
 ```bash
 --packages \
@@ -184,6 +194,67 @@ Metadata Tables：
 
 ---
 
+# 🧹 Lakehouse Maintenance
+
+為維持 Iceberg Table 查詢效能與控制 Metadata 成長，
+本專案每日凌晨執行維護工作。
+
+---
+
+## Snapshot Cleanup
+
+移除過期 Snapshot。
+
+目的：
+
+- 降低 Metadata Size
+- 避免 Snapshot 無限制成長
+- 控制 Storage 成本
+
+範例：
+
+CALL demo.system.expire_snapshots(
+    table => 'bronze.kafka_events_hidden_partition',
+    retain_last => 3
+)
+
+---
+
+## Remove Orphan Files
+
+移除不再被 Iceberg Metadata 引用的檔案。
+
+目的：
+
+- 回收儲存空間
+- 避免歷史殘留檔案累積
+
+範例：
+
+CALL demo.system.remove_orphan_files(
+    table => 'bronze.kafka_events_hidden_partition'
+)
+
+---
+
+## Data File Compaction
+
+合併 Small Files。
+
+目的：
+
+- 提升查詢效能
+- 降低 Metadata 數量
+- 改善 Scan 效率
+
+範例：
+
+CALL demo.system.rewrite_data_files(
+    table => 'bronze.kafka_events_hidden_partition'
+)
+
+---
+
 # ⚙️ Airflow DAG
 
 ## 主流程
@@ -212,6 +283,19 @@ replay_bad_events
 
 * 手動 Trigger
 * 或低頻排程
+
+---
+
+## Maintenance 流程
+
+```text
+replay_bad_events
+```
+
+執行方式：
+
+* cleanup_iceberg 、 compact_bronze_silver： 每六小時執行一次
+* compact_gold_iceberg： 每天凌晨三點執行
 
 ---
 
